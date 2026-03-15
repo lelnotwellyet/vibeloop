@@ -1,46 +1,197 @@
-# Getting Started with Create React App
+# VibeLoop — Student Mentorship Platform
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A social networking web app connecting junior students with senior mentors. Built with React + TypeScript.
 
-## Available Scripts
+## Pages
 
-In the project directory, you can run:
+| Route | Description |
+|-------|-------------|
+| `/login` | Login page |
+| `/register` | Register page (Junior / Senior role selection) |
+| `/feed` | Main feed with posts, trending topics, suggested mentors |
+| `/chat` | Messaging UI |
+| `/profile/:id` | User profile with banner, skills, posts |
 
-### `npm start`
+---
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## Getting Started
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+### Prerequisites
+- Node.js v18+
+- npm
 
-### `npm test`
+### Install & Run
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```bash
+git clone <repo-url>
+cd vibeloop
+npm install
+npm start
+```
 
-### `npm run build`
+App runs at **http://localhost:3000**
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+---
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Connecting to Backend (MongoDB + Express)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+All the UI is currently using mock/static data. To wire it up to a real Express + MongoDB backend, follow these steps.
 
-### `npm run eject`
+### 1. Install Axios
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+```bash
+npm install axios
+```
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### 2. Create an API config file
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+Create `src/api.ts`:
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+```ts
+import axios from 'axios';
 
-## Learn More
+const api = axios.create({
+  baseURL: 'http://localhost:5000/api', // your Express server URL
+});
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+// Attach JWT token to every request automatically
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+export default api;
+```
+
+### 3. API endpoints your Express server should expose
+
+#### Auth
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/login` | Login → returns JWT token + user |
+| POST | `/api/auth/register` | Register new user |
+
+#### Users
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/users/:id` | Get user profile |
+| PUT | `/api/users/:id` | Update profile |
+| GET | `/api/users/mentors` | Get suggested mentors |
+
+#### Posts / Feed
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/posts` | Get all posts (feed) |
+| POST | `/api/posts` | Create a new post |
+| PUT | `/api/posts/:id/like` | Like / unlike a post |
+
+#### Messages / Chat
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/conversations` | Get all conversations |
+| GET | `/api/conversations/:id/messages` | Get messages in a conversation |
+| POST | `/api/conversations/:id/messages` | Send a message |
+
+---
+
+### 4. Example — replace mock login (`src/pages/Login.tsx`)
+
+```ts
+import api from '../api';
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  const res = await api.post('/auth/login', { email, password });
+  localStorage.setItem('token', res.data.token);
+  navigate('/feed');
+};
+```
+
+### 5. Example — replace mock feed posts (`src/pages/Feed.tsx`)
+
+```ts
+import { useEffect, useState } from 'react';
+import api from '../api';
+
+const [posts, setPosts] = useState([]);
+
+useEffect(() => {
+  api.get('/posts').then(res => setPosts(res.data));
+}, []);
+```
+
+### 6. Recommended MongoDB Schema (Mongoose)
+
+```js
+// User
+{
+  name: String,
+  email: String,
+  passwordHash: String,
+  role: { type: String, enum: ['Junior', 'Senior'] },
+  skills: [String],
+  bio: String,
+  location: String,
+  connections: [{ type: ObjectId, ref: 'User' }],
+  mentees: [{ type: ObjectId, ref: 'User' }],
+  createdAt: Date,
+}
+
+// Post
+{
+  author: { type: ObjectId, ref: 'User' },
+  content: String,
+  likes: [{ type: ObjectId, ref: 'User' }],
+  comments: [{ body: String, author: ObjectId, createdAt: Date }],
+  createdAt: Date,
+}
+
+// Message
+{
+  conversation: { type: ObjectId, ref: 'Conversation' },
+  sender: { type: ObjectId, ref: 'User' },
+  text: String,
+  createdAt: Date,
+}
+
+// Conversation
+{
+  participants: [{ type: ObjectId, ref: 'User' }],
+  lastMessage: String,
+  updatedAt: Date,
+}
+```
+
+---
+
+## Tech Stack
+
+| Layer | Tech |
+|-------|------|
+| Frontend | React 18, TypeScript |
+| Routing | React Router v6 |
+| Icons | Lucide React |
+| Styling | Plain CSS (no framework) |
+| Backend (to connect) | Express.js |
+| Database (to connect) | MongoDB + Mongoose |
+| Auth (to connect) | JWT |
+
+---
+
+## Project Structure
+
+```
+src/
+├── components/
+│   ├── Navbar.tsx       # Top navigation bar
+│   └── Badge.tsx        # Senior / Junior badge pill
+├── pages/
+│   ├── Login.tsx
+│   ├── Register.tsx
+│   ├── Feed.tsx
+│   ├── Chat.tsx
+│   └── Profile.tsx
+├── App.tsx              # Routes setup
+└── index.css            # Global styles
+```

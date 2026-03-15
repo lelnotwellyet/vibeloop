@@ -1,0 +1,20 @@
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid;
+}
+
+.badge-senior {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.badge-junior {
+  background: #f0fdf4;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}
