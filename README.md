@@ -23,7 +23,7 @@ A social networking web app connecting junior students with senior mentors. Buil
 ### Install & Run
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/lelnotwellyet/vibeloop
 cd vibeloop
 npm install
 npm start
